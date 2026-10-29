@@ -31,10 +31,14 @@ renderizar(cardapio);
 
 const busca = document.querySelector("#busca");
 function buscar() {
-  const termo = busca.value;
+  const termo = busca.value.toLowerCase();
   const achados = [];
+
   for (const item of cardapio) {
-    if (item.nome.includes(termo)) {
+
+    const nomeLanche = item.nome.toLowerCase();
+
+    if (nomeLanche.startsWith(termo)) {
       achados.push(item);
     }
   }
