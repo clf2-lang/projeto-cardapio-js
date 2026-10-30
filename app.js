@@ -17,12 +17,15 @@ let carrinho = [];
 
 function renderizar(itens) {
   lista.replaceChildren();
+
   for (const item of itens) {
     const li = document.createElement("li");
-    li.textContent = `${item.nome} - R$ ${item.preco.toFixed(2)} (${item.categoria})`;
+    li.textContent = `${item.nome} - R$ ${item.preco.toFixed(2)}`;
+
     const btn = document.createElement("button");
     btn.textContent = "Adicionar";
     btn.dataset.id = item.id;
+    btn.addEventListener("click", () => adicionarAoCarrinho(item.id));
     li.append(btn);
     lista.append(li);
   }
@@ -45,3 +48,25 @@ function buscar() {
   renderizar(achados);
 }
 busca.addEventListener("input", buscar);
+
+
+const listaCarrinho = document.querySelector("#carrinho");
+
+function renderizarCarrinho() {
+  listaCarrinho.replaceChildren();
+
+  for (const item of carrinho) {
+    const li = document.createElement("li");
+    li.textContent = `${item.nome} - R$ ${item.preco.toFixed(2)}`;
+    listaCarrinho.append(li);
+  }
+}
+
+function adicionarAoCarrinho(id) {
+  const item = cardapio.find((item) => item.id === id);
+  carrinho.push(item);
+  
+  console.log("Carrinho atual:", carrinho);
+
+  renderizarCarrinho();
+}
