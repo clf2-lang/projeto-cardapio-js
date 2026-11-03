@@ -38,7 +38,6 @@ function buscar() {
   const achados = [];
 
   for (const item of cardapio) {
-
     const nomeLanche = item.nome.toLowerCase();
 
     if (nomeLanche.startsWith(termo)) {
@@ -48,7 +47,6 @@ function buscar() {
   renderizar(achados);
 }
 busca.addEventListener("input", buscar);
-
 
 const listaCarrinho = document.querySelector("#carrinho");
 const elementoTotal = document.querySelector("#total");
@@ -60,27 +58,30 @@ function renderizarCarrinho() {
 
   for (const item of carrinho) {
     const li = document.createElement("li");
-    li.textContent = `${item.nome} - R$ ${item.preco.toFixed(2)}`;
+    li.textContent = `${item.quantidade}x ${item.nome} - R$ ${(item.preco * item.quantidade).toFixed(2)} `;
+
+    const btnRemover = document.createElement("button");
+    btnRemover.textContent = "-";
+    btnRemover.addEventListener("click", () => removerDoCarrinho(item.id));
+
+    li.append(btnRemover);
     listaCarrinho.append(li);
 
-    total += item.preco;
-    elementoTotal.textContent = `Total: R$ ${total.toFixed(2)}`;
+    total = total + item.preco * item.quantidade;
   }
 
-
+  elementoTotal.textContent = `Total: R$ ${total.toFixed(2)}`;
 }
 
 function adicionarAoCarrinho(id) {
   const itemNoCarrinho = carrinho.find((item) => item.id === id);
 
   if (itemNoCarrinho) {
-    // Usando o nome correto da variável!
     itemNoCarrinho.quantidade = itemNoCarrinho.quantidade + 1;
   } else {
     const itemDoCardapio = cardapio.find((item) => item.id === id);
     carrinho.push({ ...itemDoCardapio, quantidade: 1 });
   }
-  
   renderizarCarrinho();
 }
 
@@ -92,30 +93,51 @@ function removerDoCarrinho(id) {
   } else {
     carrinho = carrinho.filter((item) => item.id !== id);
   }
-  
-  renderizarCarrinho(); 
+  renderizarCarrinho();
 }
 
-function renderizarCarrinho() {
-  listaCarrinho.replaceChildren();
-  let total = 0; 
+const form = document.querySelector("#pedido");
+const inputNome = document.querySelector("#nome");
+const inputZap = document.querySelector("#zap");
+const aviso = document.querySelector("#aviso");
+const msg = document.querySelector("#mensagem");
+const erroZap = document.querySelector("#zap-erro");
 
-  for (const item of carrinho) {
-    const li = document.createElement("li");
-    
-    // Novo texto que mostra a quantidade e multiplica o preço
-    li.textContent = `${item.quantidade}x ${item.nome} - R$ ${(item.preco * item.quantidade).toFixed(2)} `;
-    
-    // Criação do botão de remover
-    const btnRemover = document.createElement("button");
-    btnRemover.textContent = "-";
-    btnRemover.addEventListener("click", () => removerDoCarrinho(item.id));
-    
-    li.append(btnRemover);
-    listaCarrinho.append(li);
-    
-    total = total + (item.preco * item.quantidade); 
+function whatsappValido(numero) {
+  const apenasNumeros = numero.replace(/\D/g, "");
+  const numeroSemPais =
+    apenasNumeros.startsWith("55") && [12, 13].includes(apenasNumeros.length)
+    ? apenasNumeros.slice(2)
+    : apenasNumeros;
+
+  if (!/^(?:[1-9]\d[2-5]\d{7}|[1-9]\d9\d{8})$/.test(numeroSemPais)) {
+    return false;
   }
-  
-  elementoTotal.textContent = `Total: R$ ${total.toFixed(2)}`;
+
+  return !/^(\d)\1+$/.test(numeroSemPais);
 }
+
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const nome = inputNome.value;
+  const zap = inputZap.value;
+  erroZap.textContent = "";
+  inputZap.removeAttribute("aria-invalid");
+
+  if (nome.trim() === "" || zap.trim() === "") {
+    aviso.textContent = "Preencha seu nome e WhatsApp!";
+    return;
+  }
+  if (!whatsappValido(zap)) {
+    erroZap.textContent = "Informe um WhatsApp válido com DDD.";
+    inputZap.setAttribute("aria-invalid", "true");
+    inputZap.focus();
+    return;
+  }
+  if (carrinho.length === 0) {
+    aviso.textContent = "Adicione pelo menos um item ao carrinho!";
+    return;
+  }
+  msg.textContent = `Pedido: ${nome}`;
+});
