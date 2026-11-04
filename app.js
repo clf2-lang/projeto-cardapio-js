@@ -1,3 +1,4 @@
+// Dados do cardápio em texto; o JSON.parse transforma esse texto em objetos JavaScript.
 const texto = `[
   {"id": 1, "nome": "Coxinha", "preco": 5, "categoria": "salgado"},
   {"id": 2, "nome": "Pastel de queijo", "preco": 8, "categoria": "salgado"},
@@ -11,28 +12,43 @@ const texto = `[
   {"id": 10, "nome": "Café com leite", "preco": 4, "categoria": "bebida"}
 ]`;
 const cardapio = JSON.parse(texto);
-
 const lista = document.querySelector("#cardapio");
-let carrinho = [];
+const listaCarrinho = document.querySelector("#carrinho");
+const elementoTotal = document.querySelector("#total");
 
+// Recupera o carrinho salvo no navegador ou começa com uma lista vazia.
+const salvo = localStorage.getItem("carrinho");
+let carrinho = JSON.parse(salvo) ?? [];
+renderizarCarrinho();
+
+// Mostra os itens recebidos e cria um botão "+" para cada item.
 function renderizar(itens) {
   lista.replaceChildren();
 
   for (const item of itens) {
     const li = document.createElement("li");
-    li.textContent = `${item.nome} - R$ ${item.preco.toFixed(2)}`;
-
+    li.textContent = `${item.nome}R$ 
+${item.preco.toFixed(2)}`;
     const btn = document.createElement("button");
     btn.textContent = "+";
     btn.dataset.id = item.id;
-    btn.addEventListener("click", () => adicionarAoCarrinho(item.id));
     li.append(btn);
     lista.append(li);
   }
 }
+
+// Usa delegação de eventos: um clique na lista identifica o item pelo data-id.
+lista.addEventListener("click", (e) => {
+  const id = e.target.dataset.id;
+  if (id) {
+    adicionarAoCarrinho(Number(id));
+  }
+});
 renderizar(cardapio);
 
 const busca = document.querySelector("#busca");
+
+// Filtra o cardápio pelo início do nome e atualiza a lista exibida.
 function buscar() {
   const termo = busca.value.toLowerCase();
   const achados = [];
@@ -48,9 +64,7 @@ function buscar() {
 }
 busca.addEventListener("input", buscar);
 
-const listaCarrinho = document.querySelector("#carrinho");
-const elementoTotal = document.querySelector("#total");
-
+// Recria o carrinho na tela e recalcula o total a cada atualização.
 function renderizarCarrinho() {
   listaCarrinho.replaceChildren();
 
@@ -73,6 +87,7 @@ function renderizarCarrinho() {
   elementoTotal.textContent = `Total: R$ ${total.toFixed(2)}`;
 }
 
+// Adiciona um item ao carrinho ou aumenta sua quantidade.
 function adicionarAoCarrinho(id) {
   const itemNoCarrinho = carrinho.find((item) => item.id === id);
 
@@ -82,9 +97,11 @@ function adicionarAoCarrinho(id) {
     const itemDoCardapio = cardapio.find((item) => item.id === id);
     carrinho.push({ ...itemDoCardapio, quantidade: 1 });
   }
+  salvarCarrinho();
   renderizarCarrinho();
 }
 
+// Diminui a quantidade do item; quando chega a zero, remove o item.
 function removerDoCarrinho(id) {
   const item = carrinho.find((item) => item.id === id);
 
@@ -93,6 +110,7 @@ function removerDoCarrinho(id) {
   } else {
     carrinho = carrinho.filter((item) => item.id !== id);
   }
+  salvarCarrinho();
   renderizarCarrinho();
 }
 
@@ -103,12 +121,13 @@ const aviso = document.querySelector("#aviso");
 const msg = document.querySelector("#mensagem");
 const erroZap = document.querySelector("#zap-erro");
 
+// Aceita números de WhatsApp com DDD e rejeita sequências repetidas.
 function whatsappValido(numero) {
   const apenasNumeros = numero.replace(/\D/g, "");
   const numeroSemPais =
     apenasNumeros.startsWith("55") && [12, 13].includes(apenasNumeros.length)
-    ? apenasNumeros.slice(2)
-    : apenasNumeros;
+      ? apenasNumeros.slice(2)
+      : apenasNumeros;
 
   if (!/^(?:[1-9]\d[2-5]\d{7}|[1-9]\d9\d{8})$/.test(numeroSemPais)) {
     return false;
@@ -117,6 +136,7 @@ function whatsappValido(numero) {
   return !/^(\d)\1+$/.test(numeroSemPais);
 }
 
+// Valida os dados do pedido e impede o envio antes de todas as condições serem atendidas.
 form.addEventListener("submit", (e) => {
   e.preventDefault();
 
@@ -140,4 +160,12 @@ form.addEventListener("submit", (e) => {
     return;
   }
   msg.textContent = `Pedido: ${nome}`;
+  carrinho = [];
+  salvarCarrinho();
+  renderizarCarrinho();
 });
+
+// Mantém o estado atual do carrinho no localStorage para sobreviver ao recarregamento.
+function salvarCarrinho() {
+  localStorage.setItem("carrinho", JSON.stringify(carrinho));
+}
